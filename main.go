@@ -14,20 +14,24 @@ type Shaders struct {
 	fragment string
 }
 
-
 type AttribLocationsInfo struct {
 	vertexPosition js.Value
 }
 
 type UniformsLocationsInfo struct {
-	projectionMatrix js.Value
-	modelViewMatrix js.Value
+	projectionMatrix 	js.Value
+	modelViewMatrix 	js.Value
 }
 
 type WebGLContext struct {
-	program js.Value
-	attribLocations AttribLocationsInfo
-	uniformLocations UniformLocationsInfo
+	shaderProgram 		js.Value
+	canvasCtx 			js.Value
+	attribLocations 	AttribLocationsInfo
+	uniformLocations 	UniformLocationsInfo
+}
+
+func (gl *WebGLContext) GetContext() js.Value {
+	return gl.canvasCtx
 }
 
 // InitShaders initializes Shaders interface
@@ -40,37 +44,38 @@ func InitShaders(v string, f string) Shaders {
 }
 
 
-// InitWebGL initializes WebGL
-func InitWebGL(canvas js.Value, shaders Shaders) WebGLContext {
-	ctx := canvas.Call("getContext", "webgl")
-	// if !ctx {
+// Init initializes WebGL
+func Init(canvas js.Value, shaders Shaders) WebGLContext {
+	canvasCtx := canvas.Call("getContext", "webgl")
+	// if !canvasCtx {
 	// 	panic("Unable to initialize WebGL. Your browser or machine may not support it.")
 	// }
 
-	fmt.Println("ctx", ctx)
+	fmt.Println("canvasCtx", canvasCtx)
 	// Set clear color to black, fully opaque
-	ctx.Call("clearColor", 0.0, 0.0, 0.0, 1.0)
+	canvasCtx.Call("clearColor", 0.0, 0.0, 0.0, 1.0)
 
 	// Clear the color buffer with specified clear color
-	ctx.Call("clear", ctx.Get("COLOR_BUFFER_BIT"))
+	canvasCtx.Call("clear", canvasCtx.Get("COLOR_BUFFER_BIT"))
 
-	shaderProgram := initShaderProgram(ctx, shaders)
+	shaderProgram := initShaderProgram(canvasCtx, shaders)
 
 	attribLocations := AttribLocationsInfo{
-		vertexPosition: ctx.Call("getAttribLocation", shaderProgram, "aVertexPosition"),
+		vertexPosition: canvasCtx.Call("getAttribLocation", shaderProgram, "aVertexPosition"),
 	}
 	uniformLocations := UniformsLocationsInfo{
-		projectionMatrix: ctx.Call("getUniformLocation", shaderProgram, "uProjectionMatrix"),
-		modelViewMatrix: ctx.Call("getUniformLocation", shaderProgram, "uModelViewMatrix"),
+		projectionMatrix: canvasCtx.Call("getUniformLocation", shaderProgram, "uProjectionMatrix"),
+		modelViewMatrix: canvasCtx.Call("getUniformLocation", shaderProgram, "uModelViewMatrix"),
 	}
 
-	goWebGLCtx := WebGLContext{
-        program: shaderProgram,
-        attribLocations: attribLocations,
-        uniformLocations: uniformLocations,
+	gl := WebGLContext{
+        shaderProgram,
+        attribLocations,
+		uniformLocations,
+		canvasCtx,
 	}
 	
-	return goWebGLCtx
+	return gl
 }
 
 func initShaderProgram(ctx js.Value, shaders Shaders) js.Value {
@@ -124,15 +129,15 @@ func loadShader(ctx js.Value, sType js.Value, source string) js.Value {
 }
 
 
-func DrawScene(ctx js.Value, programInfo WebGLContext, buffers Buffers) {
-    ctx.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
-    ctx.clearDepth(1.0);                 // Clear everything
-    ctx.enable(ctx.DEPTH_TEST);           // Enable depth testing
-    ctx.depthFunc(ctx.LEQUAL);            // Near things obscure far things
+func DrawScene(gl WebGLContext, buffers Buffers) {
+	ctx := gl.GetContext()
+	ctx.Call("clearColor", 0.0, 0.0, 0.0, 1.0) 	// Clear to black, fully opaque
+    ctx.Call("clearDepth", 1.0)                	// Clear everything
+    ctx.Call("enable", ctx.Get("DEPTH_TEST"))	// Enable depth testing
+    ctx.Call("depthFunc", ctx.Get("LEQUAL"))	// Near things obscure far things
   
-    // Clear the canvas before we start drawing on it.
-  
-    ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+    // Clear the canvas before start drawing on it.
+    ctx.Call("clear", (ctx.Get("COLOR_BUFFER_BIT") | ctx.Get("DEPTH_BUFFER_BIT")));
   
     // Create a perspective matrix, a special matrix that is
     // used to simulate the distortion of perspective in a camera.
