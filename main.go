@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"syscall/js"
+	"math"
 
 	"gonum.org/v1/gonum/mat"
+	"github.com/renanferr/gowebgl/mat4"
 )
 
 // Shaders sources
@@ -146,23 +148,25 @@ func DrawScene(gl WebGLContext, buffers Buffers) {
     // and we only want to see objects between 0.1 units
     // and 100 units away from the camera.
   
-    const fieldOfView = 45 * Math.PI / 180;   // in radians
-    const aspect = ctx.canvas.clientWidth / ctx.canvas.clientHeight;
-    const zNear = 0.1;
-    const zFar = 100.0;
-    const projectionMatrix = mat4.create();
+	fieldOfView := 45 * math.Pi / 180
+
+	aspect := ctx.Get("canvas").Get("clientWidth").Float() / ctx.Get("canvas").Get("clientHeight").Float()
+
+	zNear := 0.1
+	zFar := 100.0
+	projectionMatrix := mat4.Create()
   
     // note: glmatrix.js always has the first argument
     // as the destination to receive the result.
-    mat4.perspective(projectionMatrix,
+    mat4.Perspective(projectionMatrix,
                      fieldOfView,
                      aspect,
                      zNear,
-                     zFar);
+                     zFar)
   
     // Set the drawing position to the "identity" point, which is
     // the center of the scene.
-	modelViewMatrix := mat.NewDense(4, 4, nil)
+	modelViewMatrix := mat4.Create()
     // Now move the drawing position a bit to where we want to
     // start drawing the square.
   
