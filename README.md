@@ -1,2 +1,2 @@
 # gowebgl
-Bindings for the WebGL API for Wasm Go
+Bindings to the WebGL API for Wasm Go
